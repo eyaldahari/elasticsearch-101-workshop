@@ -1,0 +1,150 @@
+################################
+
+#__________________________________________________
+# Search and Filter
+#__________________________________________________
+
+#__________________________________________________
+#Before starting run the following command (during the workshop please ask me why?)
+PUT /bank/_mapping/account
+{
+  "properties": {
+    "address": {
+      "type": "multi_field",
+      "fields": {
+        "address": {
+          "type": "string",
+          "index": "analyzed"
+        },
+        "address.raw": {
+          "type": "string",
+          "index": "not_analyzed"
+        }
+      }
+    }
+  }
+}
+
+
+#Here is an example for a bank account document:
+#{
+#   "account_number": 35,
+#   "balance": 42039,
+#   "firstname": "Darla",
+#   "lastname": "Bridges",
+#   "age": 27,
+#   "gender": "F",
+#   "address": "315 Central Avenue",
+#   "employer": "Xeronk",
+#   "email": "darlabridges@xeronk.com",
+#   "city": "Woodlake",
+#   "state": "RI"
+#}
+
+#__________________________________________________
+# Let's execute a basic search.
+
+# Find *all* documents from index named bank under type account
+GET /???/???/_search
+
+
+#__________________________________________________
+# Find all accounts in the sate of New York "NY"
+GET /???/???/_search
+{
+  "query": {
+    "match": {
+      "state": "???"
+    }
+  }
+}
+
+
+# Find all accounts with terms in "Oxford" or "Street" in their address
+GET /???/???/_search
+{
+  "query": {
+    "match": {
+      "???": "??? ???"
+    }
+  }
+}
+
+
+# Find all accounts located at "Eagle Street"
+GET /???/???/_search
+{
+  "query": {
+    "match_phrase": {
+      "???": "??? ???"
+    }
+  }
+}
+
+#Find all femails from Central Avenue branch
+GET /???/???/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "gender": "???"
+          }
+        },
+        {
+          "match_phrase": {
+            "address": "??? ???"
+          }
+        }
+      ]
+    }
+  }
+}
+
+#Find all accounts which are employed by "Xeronk" and
+#highlight the matching "employer" field with pretag <h1> and post tag </h1>
+GET /???/???/_search
+{
+  "query": {
+    "bool": {
+      "should": [
+        {
+          "match": {
+            "???": {
+              "query": "???"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "highlight": {
+    "fields": {
+      "???": {}
+    },
+    "pre_tags": ["???"],
+    "post_tags": ["???"]
+  }
+}
+
+
+#__________________________________________________
+# Filtering 
+# Filtering is often faster than querying
+
+#Find all accounts with balance > 23000
+GET /bank/account/_search
+{
+  "query": {
+    "filtered": {
+      "filter": {
+        "range": {
+          "balance": {
+            "gte": ???
+          }
+        }
+      }
+    }
+  }
+}

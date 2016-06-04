@@ -1,0 +1,17 @@
+#windows
+#in HP command line run
+#>set HTTP_PROXY=
+#simple file install
+e:\my\my-dev\ElasticSearch\elasticsearch-2.3.0\plugins>..\bin\plugin install file:///e:\my\my-dev\ElasticSearch\elasticsearch-2.3.0\plugins\license-2.
+3.1.zip
+
+#marvel agent install
+e:\my\my-dev\ElasticSearch\elasticsearch-2.3.0\plugins>..\bin\plugin install file:///e:\my\my-dev\ElasticSearch\elasticsearch-2.3.0\plugins\e:\my\my-dev\ElasticSearch\elasticsearch-2.3.0\plugins>..\bin\plugin install file:///e:\my\my-dev\ElasticSearch\elasticsearch-2.3.0\plugins\license-2.
+3.1.zip
+
+#kibana plugin install
+e:\my\my-dev\ElasticSearch\elasticsearch-2.3.0\plugins>..\bin\plugin install file:///e:\my\my-dev\ElasticSearch\elasticsearch-2.3.0\plugins\e:\my\my-dev\ElasticSearch\elasticsearch-2.3.0\plugins>..\bin\plugin install file:///e:\my\my-dev\ElasticSearch\elasticsearch-2.3.0\plugins\license-2.
+3.1.zip
+
+
+bin/kibana plugin --install marvel --url file:///path/to/file/marvel-2.3.1.tar.gz

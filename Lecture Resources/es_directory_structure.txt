@@ -1,0 +1,34 @@
+.
+|-LICENSE.txt
+|-NOTICE.txt
+|-README.textile
+|-bin
+|  |-elasticsearch
+|  |-elasticsearch.in.bat
+|  |-elasticsearch.in.sh
+|  |-plugin
+|  |-plugin.bat
+|  |-...
+|-config
+|  |-elasticsearch.yml
+|  |-logging.yml
+|-data
+|  |-docker-elasticsearch-cluster-center-staging
+|  |  -nodes
+|  |      |-0
+|  |        |-indices
+|  |          |-alm@demo@demo@642e6eac-23ae-41e9-973d-81d900796606_1444722771290
+|  |          |-fetcher_1444722767002
+|-lib
+|  |-elasticsearch-1.7.1.jar
+|  |-...
+|-logs
+|  |-elasticsearch.log
+|  |-elasticsearch_index_search_slowlog.log
+|-plugins
+   |-head
+   |-marvel
+     |-_site
+       |...
+         |-sense
+           |...

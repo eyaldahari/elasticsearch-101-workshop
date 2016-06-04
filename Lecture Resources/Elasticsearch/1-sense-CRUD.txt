@@ -1,0 +1,109 @@
+################################
+
+GET _cluster/health?pretty
+GET _cat/indices?pretty
+
+DELETE /catalog
+
+###### Basic CRUD Operations ######
+#----------------------------------
+# index a JSON document
+
+#    ---index name <=> Database
+#    |
+#    |       ----type name <==> db table
+#    |       |
+#    |       |     ----document (id) <==> db row
+#    |       |     |   document fields <==> db columns
+#    V       V     V
+PUT /catalog/bands/1
+{
+  "title": "The skys gone out",
+  "name": {
+    "first": "Peter",
+    "last": "Murphy"
+  },
+  "publish_date": "1982-10-26T23:24:25-0700",
+  "price": 29.90
+}
+
+#----------------------------------
+# Retrieve the document
+GET /catalog/bands/1
+
+# Does not exist document response
+GET /catalog/bands/does-not-exist
+
+#----------------------------------
+# ID's are not mandatory will be auto generated
+# ex. log lines do not have an id
+POST /catalog/bands
+{
+  "title": "The skys gone out",
+  "name": {
+    "first": "Daniel",
+    "last": "Ash"
+  },
+  "publish_date": "1982-10-26T23:24:25-0700",
+  "price": 29.90
+}
+
+GET /catalog/bands/{generated id}
+
+#----------------------------------
+# To update a document we can overwrite it
+# omitting a field when overwriting will delete it
+PUT /catalog/bands/1
+{
+  "title": "The skys gone out",
+  "name": {
+    "first": "Peter",
+    "last": "Murphy"
+  },
+  "publish_date": "1982-10-26T23:24:25-0700",
+  "price": 39.90
+}
+
+GET /catalog/bands/1
+
+#----------------------------------
+# Or use the update api. Is useually used for partial
+# update
+POST /catalog/bands/1/_update
+{
+  "doc": {
+    "price": 49.90
+  }
+}
+
+#----------------------------------
+# Update api may add new fields (and more..)
+POST /catalog/bands/1/_update
+{
+  "doc": {
+    "price_il": 169.90
+  }
+}
+
+GET /catalog/bands/1
+
+#----------------------------------
+# Delete a document
+DELETE /catalog/bands/1
+
+GET /catalog/bands/1
+
+#----------------------------------
+# Delete a type
+DELETE /catalog/bands
+
+GET /catalog/bands/_count
+
+#----------------------------------
+# Delete an index
+DELETE /catalog
+
+GET /catalog/bands/1
+
+#---------------------------------------------
+##############################################

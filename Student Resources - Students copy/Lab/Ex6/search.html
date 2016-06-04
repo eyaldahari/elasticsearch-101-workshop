@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Elasticsearch</title>
+    <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.2.26/angular.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+    <!--<style>label {width:110px; display: inline-block; position: relative; overflow: hidden;}</style>-->
+    <style>
+        .no-margin {
+            margin: 0 !important;
+        }
+        mark {
+            background-color: #e6fb0a;
+        }
+    </style>
+</head>
+
+<body ng-app="elasticsearch">
+<div class="container" ng-controller="irisController">
+    <div class="row">
+        <div class="col-sm-8 col-sm-push-2">
+            <div class="jumbotron no-margin">
+                <h2 class="text-center">
+                    ElasticSearch 101 Workshop
+                    <small>
+                        <a href="mailto:eyal.dahari@hpe.com?Subject=ElasticSearch 101 Workshop" target="_top">Mail: Eyal Dahari</a>
+                    </small>
+                </h2>
+                <br>
+                <div style="position: relative;">
+                    <form class="form-horizontal">
+                        <div class="form-group has-feedback" ng-class="{'has-success' : elasticModel.connectionStatus === 'OKAY', 'has-error' : elasticModel.connectionStatus === 'NOT_OKAY', 'has-warning' : elasticModel.connectionStatus === 'WAIT'}">
+                            <label class="col-sm-2 control-label">ES Hostname:</label>
+                            <div class="col-sm-10">
+                                <input ng-blur="elasticMethods.checkConnectivity()" type="text" size="40" ng-model="model.es_hostname" placeholder="elasticsearch host name..." class="form-control"/>
+                                <span class="glyphicon glyphicon-ok form-control-feedback" aria-hidden="true" ng-show="elasticModel.connectionStatus === 'OKAY'"></span>
+                                <span class="glyphicon glyphicon-remove form-control-feedback" aria-hidden="true" ng-show="elasticModel.connectionStatus === 'NOT_OKAY'"></span>
+                                <span class="glyphicon glyphicon-refresh form-control-feedback" aria-hidden="true" ng-show="elasticModel.connectionStatus === 'WAIT'"></span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">ES Index name:</label>
+                            <div class="col-sm-10">
+                                <select ng-model="model.index" ng-change="model.from=0;elasticMethods.getIndexTypes();doQuery()" class="form-control" ng-disabled="elasticModel.availableIndices.length === 0">
+                                    <option value="" label="Select an index..." disabled ng-selected="elasticModel.availableIndices.length === 0"></option>
+                                    <option ng-repeat="index in elasticModel.availableIndices" value="{{index}}" ng-bind="index"></option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-sm-4">
+                                <div class="form-group">
+                                    <label class="col-sm-6 control-label">Page#:</label>
+                                    <div class="col-sm-6">
+                                        <input ng-change="doQuery()" type="number" min="0" max="{{model.max_pages}}" ng-model="model.from" placeholder="page number..." class="form-control"/>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-sm-4">
+                                <div class="form-group">
+                                    <label class="col-sm-6 control-label">Results#:</label>
+                                    <div class="col-sm-6">
+                                        <!--<input ng-change="doQuery()" type="number" min="0" ng-model="model.size" placeholder="number of results..." class="form-control"/>-->
+
+                                        <select ng-model="model.size" ng-change="model.from=0;doQuery()" class="form-control">
+                                            <option value="10">10</option>
+                                            <option value="25">25</option>
+                                            <option value="50">50</option>
+                                            <option value="100">100</option>
+                                            <option value="200">200</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-sm-7 col-sm-push-2">
+                                <input type="text" size="80" ng-model="model.keywords" placeholder="Search..." class="form-control" ng-disabled="elasticModel.availableTypes.length === 0 && elasticModel.availableIndices.length === 0"/>
+                            </div>
+
+                            <div class="col-sm-3 col-sm-push-2">
+                                <select ng-model="model.type" ng-change="model.from=0;doQuery()" class="form-control" ng-disabled="elasticModel.availableTypes.length === 0">
+                                    <option value="" ng-selected="elasticModel.availableTypes.length === 0" disabled>Select type...</option>
+                                    <option value="_all">all</option>
+                                    <option ng-repeat="type in elasticModel.availableTypes" value="{{type}}" ng-bind="type"></option>
+                                </select>
+                            </div>
+                        </div>
+                    </form>
+                    <a href="mailto:ohad.ben-nun@hpe.com?Subject=ElasticSearch 101 Workshop" target="_top" style="position: absolute !important; right: -55px; bottom: -45px;">Angular coding: Ohad Ben-Nun</a>
+                </div>
+            </div>
+            <div class="alert alert-success" role="alert" ng-show="answers">
+                <p>
+                    took: <strong>{{answers.took}}ms</strong>,
+                    total answers: <strong ng-bind="answers.hits.total"></strong>
+                </p>
+            </div>
+            <div class="alert alert-danger" role="alert" ng-show="errorFound">
+                <pre style="background: transparent; border: 0;">
+                    {{errorFound}}
+                </pre>
+            </div>
+
+            <section class="result" ng-repeat="x in answers.hits.hits">
+                <div class="panel panel-success">
+                    <div class="panel-heading" ng-click="collapsed=!collapsed">
+                        <span class="glyphicon glyphicon-plus" ng-hide="collapsed"></span>
+                        <span class="glyphicon glyphicon-minus" ng-show="collapsed"></span>
+                        <span style="font-weight:bold">{{x._source.type || x._index}} {{x._source.id || x._id}}</span>
+                        <span style="font-weight:bold; color: black;">{{x._source.fields.name}}</span>
+                        <span>(score {{x._score}})</span></td>
+                    </div>
+                    <ul class="list-group">
+                        <li class="list-group-item" ng-repeat="(fldName, fldValue) in highlightedFields(x.highlight)" style="font-size: 0.8em;">
+                            <strong ng-bind="fldName"></strong>:
+                            <span ng-bind-html="to_trusted(fldValue)"></span>
+                        </li>
+                    </ul>
+
+                    <ul class="list-group" ng-show="collapsed">
+                        <li class="list-group-item" ng-repeat="(field, value) in x._source" ng-show="value" ng-click="collapsed2=!collapsed2" ng-class="{'list-group-item-info' : !isPrimitive(value)}">
+                            <strong ng-bind="field"></strong>:
+
+                            <span ng-bind="value"></span>
+
+                            <ul class="list-group no-margin" ng-if="!isPrimitive(value)" ng-show="collapsed2">
+                                <li class="list-group-item" ng-repeat="(field2, value2) in value" ng-show="value2">
+                                    <strong ng-bind="field2"></strong>:
+
+                                    <span ng-if="isPrimitive(value2)">
+                                        <span ng-bind="value2" ng-if="typeOf(value2) !== 'string'"></span>
+                                        <span ng-bind-html="to_trusted(value2)" ng-if="typeOf(value2) === 'string'"></span>
+                                    </span>
+
+                                    <span ng-bind="value2" ng-if="!isPrimitive(value2)"></span>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </section>
+        </div>
+    </div>
+
+</div>
+<script>
+
+    angular.module('elasticsearch', [], function($compileProvider) {
+        //$compileProvider.aHrefSanitizationWhitelist(/^\s*(https?|ftp|mailto|chrome-extension|td):/);
+    });
+
+    function irisController($scope,$http,$sce,$timeout,$q) {
+        var model = {
+            type:"_all", //default type to search in
+            index:"",    //elasticsearch index to search in
+            es_hostname:"localhost", //elasticsearch node name
+            keywords:"", //text to search for in query_string query format
+            from:0,      //search results are paged. This is the page number
+            size:10,     //this is the size of each page of results
+            max_pages: 0 //max # of results to return
+        };
+
+        $scope.model = model;
+
+        $scope.to_trusted = $sce.trustAsHtml;
+
+        $scope.isPrimitive = function(variable) {
+            return variable.toString() !== '[object Object]' && variable.toString() !== '[object Array]';
+        };
+
+        $scope.typeOf = function(val) {
+            return typeof val;
+        };
+
+        $scope.doQuery = function() {
+            if (!model.keywords) {
+                $scope.answers = undefined;
+                $scope.errorFound = undefined;
+                return;
+            }
+
+            /** ELASTIC SEARCH QUERY API**/
+            var data =
+            {
+                "???": model.??? * model.???,
+                "???": model.???,
+                "query": {
+                    "query_string": {
+                        "query": (model.keywords),
+                        "use_dis_max": true
+                    }
+                },
+                "highlight": {
+                    "???": ["<mark>"],
+                    "???": ["</mark>"],
+                    "???": "html",
+                    "???" : "score",
+                    "require_field_match" : false,
+                    "fields": {"*": {}}
+                }
+            };
+
+            var url = "";
+            if( model.type == "_all")
+                url = "http://"+model.es_hostname+":9200/"+model.index+"/_search";
+            else
+                url = "http://"+model.es_hostname+":9200/"+model.index+"/"+model.type+"/_search";
+
+            $http.post(url, data)
+                    .success(function(response) {
+                        $scope.answers = response;
+//                        console.log(response);
+                        if(response.hits.total > 0) {
+                            model.max_pages = Math.floor(response.hits.total / model.size);
+                        } else {
+                            model.max_pages = 0;
+                        }
+
+                        if(model.from > model.max_pages) {
+                            model.from = 0;
+                        }
+
+                        $scope.errorFound = undefined;
+                    })
+                    .error(function(data, status) {$scope.errorFound = data; $scope.answers = undefined});
+        };
+
+        $scope.highlightedFields = function(highlightJson) {
+            var flds = new Object();
+            for (var prop in highlightJson) {
+                var fldName = prop;
+                var fldValue = highlightJson[prop];
+                if (fldValue && (fldValue[0].toLowerCase().indexOf("undefined") === -1)) {
+                    fldValue[0] = fldValue[0].replace(/&gt;/g, ">");
+                    fldValue[0] = fldValue[0].replace(/&lt;/g, "<");
+                    fldValue[0] = fldValue[0].replace(/&#x2F;/g, "/");
+//                    console.log(fldValue);
+                    flds[fldName] = fldValue[0].match(/(<.+>)?([^>]*<mark>.*<\/mark>.*)((<.+>))/ig);
+
+                    if(flds[fldName]) {
+                        flds[fldName] = flds[fldName][0].trim();
+                    } else {
+                        flds[fldName] = fldValue[0];
+                    }
+                }
+
+            }
+
+            return flds;
+        };
+
+        var searchTextTimeout, searchedText;
+        $scope.$watch('model.keywords', function(value) {
+            if (searchTextTimeout) $timeout.cancel(searchTextTimeout);
+
+            searchedText = value;
+
+            searchTextTimeout = $timeout(function() {
+                searchTextTimeout = null;
+                model.from=0;
+                $scope.doQuery();
+            }, 300);
+        });
+
+
+        //FOR ELASTIC SEARCH
+        var elasticModel = {
+            port: '9200',
+            availableIndices: [],
+            availableTypes: [],
+            connectionStatus: 'NOT_OKAY',
+            connectionsAttempts: []
+        };
+
+        var elasticMethods = {
+            checkConnectivity: function() {
+                elasticModel.connectionStatus = 'WAIT';
+                elasticModel.availableIndices = [];
+                elasticModel.availableTypes = [];
+                $scope.answers = undefined;
+                model.from = 0;
+                model.max_pages = 0;
+
+                elasticMethods.elasticRESTcall().then(
+                        function(res) {
+                            if(res.status === 200) {
+                                elasticModel.connectionStatus = 'OKAY';
+
+                                elasticMethods.getIndices();
+                            } else {
+                                elasticModel.connectionStatus = 'NOT_OKAY';
+                            }
+                        }, function(err) {
+                            //take care of multiple connection checks
+                            var is_last = true;
+                            var time_stamp = 0;
+                            var url = err.config.url;
+
+                            for(var i=elasticModel.connectionsAttempts.length-1; i>=0; i--) {
+                                if(elasticModel.connectionsAttempts[i].url === url) {
+                                    time_stamp = elasticModel.connectionsAttempts[i].time_stamp;
+                                    elasticModel.connectionsAttempts.splice(i, 1);
+                                    break;
+                                }
+                            }
+
+                            for(i=elasticModel.connectionsAttempts.length-1; i>=0; i--) {
+                                if(elasticModel.connectionsAttempts[i].time_stamp < time_stamp) {
+                                    console.log(elasticModel.connectionsAttempts[i].time_stamp);
+                                    elasticModel.connectionsAttempts.splice(i, 1);
+                                } else {
+                                    is_last = false;
+                                    break;
+                                }
+                            }
+
+                            if(is_last) {
+                                elasticModel.connectionStatus = 'NOT_OKAY';
+                            }
+                        }
+                );
+            },
+            elasticRESTcall: function(path) {
+                if(model.es_hostname.endsWith('/')) {
+                    model.es_hostname = model.es_hostname.substr(0, model.es_hostname.length - 1);
+                }
+                if(model.es_hostname.startsWith('http://')) {
+                    model.es_hostname = model.es_hostname.replace('http://', '');
+                }
+                var url = 'http://' + model.es_hostname + ':' + elasticModel.port + (path ? path : '');
+
+                //hold the request time in-case a few were made
+                var connection = {
+                    time_stamp: Date.now(),
+                    url: url
+                };
+                elasticModel.connectionsAttempts.push(connection);
+
+                //return a promise & make async http call
+                var deferred = $q.defer();
+
+                $http.get(url).then(
+                        function(res) {
+                            deferred.resolve(res);
+                        }, function(err) {
+                            deferred.reject(err);
+                        }
+                );
+
+                return deferred.promise;
+            },
+            getIndices: function() {
+                var path = '/_stats/index';
+                elasticMethods.elasticRESTcall(path).then(
+                        function(res) {
+                            console.log(res);
+
+                            angular.forEach(res.data.indices, function(val, key) {
+                                elasticModel.availableIndices.push(key);
+                            });
+
+                            if(elasticModel.availableIndices.length > 0) {
+                                model.index = elasticModel.availableIndices[0];
+
+                                elasticMethods.getIndexTypes();
+                            }
+                        }, function(err) {
+                            elasticModel.availableIndices = [];
+                        }
+                );
+            },
+            getIndexTypes: function() {
+                var path = '/' + model.index + '/_mapping';
+                elasticModel.availableTypes = [];
+
+                elasticMethods.elasticRESTcall(path).then(
+                        function(res) {
+                            angular.forEach(res.data[model.index].mappings, function(val, key) {
+                                elasticModel.availableTypes.push(key);
+                            });
+
+                            model.type = "_all";
+
+                        }, function(err) {
+                            elasticModel.availableTypes = [];
+                        }
+                );
+            }
+        };
+
+        $scope.elasticMethods = elasticMethods;
+        $scope.elasticModel = elasticModel;
+
+        elasticMethods.checkConnectivity();
+    }
+
+</script>
+
+</body>
+</html>
+ 
+

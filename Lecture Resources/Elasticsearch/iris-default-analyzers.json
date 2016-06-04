@@ -1,0 +1,54 @@
+{
+  "analysis": {
+    "filter": {
+      "filter_unique_stem_en": {
+        "type": "unique",
+        "only_on_same_position": true
+      },
+      "filter_snowball_en": {
+        "type": "snowball",
+        "language": "English"
+      },
+      "filter_worddelimiter_en": {
+        "type": "word_delimiter",
+        "split_on_numerics": false,
+        "preserve_original": true
+      },
+      "filter_stopwords_en": {
+        "type": "stop"
+      },
+      "filter_ngram": {
+        "type": "edgeNGram",
+        "min_gram": "2",
+        "max_gram": "20"
+      },
+      "filter_shingle": {
+        "type": "shingle"
+      }
+    },
+    "analyzer": {
+      "default_search": {
+        "filter": [
+          "filter_worddelimiter_en",
+          "lowercase",
+          "filter_snowball_en"
+        ],
+        "char_filter": "html_strip",
+        "type": "custom",
+        "tokenizer": "whitespace"
+      },
+      "default_index": {
+        "filter": [
+          "lowercase",
+          "filter_stopwords_en",
+          "keyword_repeat",
+          "filter_snowball_en",
+          "filter_unique_stem_en"
+        ],
+        "char_filter": "html_strip",
+        "type": "custom",
+        "tokenizer": "whitespace"
+      }
+    }
+  }
+}

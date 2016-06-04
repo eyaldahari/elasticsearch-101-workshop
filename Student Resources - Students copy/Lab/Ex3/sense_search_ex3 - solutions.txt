@@ -1,0 +1,97 @@
+# Find *all* documents from index named bank under type account
+GET /bank/account/_search
+
+#__________________________________________________
+# Find all accounts in the sate of New York "NY"
+
+GET /bank/account/_search
+{
+  "query": {
+    "match": {
+      "state": "NY"
+    }
+  }
+}
+
+# Find all accounts with terms in "Oxford" or "Street" in their address
+GET /bank/account/_search
+{
+  "query": {
+    "match": {
+      "address": "Oxford Street"
+    }
+  }
+}
+
+# Find all accounts located at "Eagle Street"
+GET /bank/account/_search
+{
+  "query": {
+    "match_phrase": {
+      "address": "Eagle Street"
+    }
+  }
+}
+
+#Find all femails from Central Avenue branch
+GET /bank/account/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "gender": "F"
+          }
+        },
+        {
+          "match_phrase": {
+            "address": "Central Avenue"
+          }
+        }
+      ]
+    }
+  }
+}
+
+#Find all accounts which are employed by "Xeronk" and
+#highlight the matching "employer" field with pretag <h1> and post tag </h1>
+GET /bank/account/_search
+{
+  "query": {
+    "bool": {
+      "should": [
+        {
+          "match": {
+            "employer": {
+              "query": "Xeronk"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "highlight": {
+    "fields": {
+      "employer": {}
+    },
+    "pre_tags": ["<h1>"],
+    "post_tags": ["</h1>"]
+  }
+}
+
+#Find all accounts with balance > 23000
+GET /bank/account/_search
+{
+  "query": {
+    "filtered": {
+      "filter": {
+        "range": {
+          "balance": {
+            "gte": 40000
+          }
+        }
+      }
+    }
+  }
+}

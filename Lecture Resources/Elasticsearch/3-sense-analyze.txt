@@ -1,0 +1,83 @@
+################################
+#__________________________________________________
+# Text Analysis
+#__________________________________________________
+
+DELETE /library/books
+
+#??? A-Z The quick brown fox ???
+POST /library/books/_bulk
+{ "index": { "_id": 1 }}
+{ "title": "The quick brown fox", "price": 5 }
+{ "index": { "_id": 2 }}
+{ "title": "The quick brown fox jumps over the lazy dog", "price": 15 }
+{ "index": { "_id": 3 }}
+{ "title": "The quick brown fox jumps over the quick dog", "price": 8 }
+{ "index": { "_id": 4 }}
+{ "title": "Brown fox brown dog", "price": 2 }
+{ "index": { "_id": 5 }}
+{ "title": "Lazy dog", "price": 9 }
+
+#What is Analysis in Elasticsearch?
+# Analysis = tokenization + token filters
+
+
+# Tokenization breaks sentences into discrete tokens
+
+GET /library/_analyze?tokenizer=standard
+{
+  "Brown fox brown dog"
+}
+
+# And filters manipulate those tokens
+
+GET /library/_analyze?tokenizer=standard&filters=lowercase
+{
+  "Brown fox brown dog"
+}
+
+
+# There is a wide variety of filters.
+# order is important
+GET /library/_analyze?tokenizer=standard&filters=unique,lowercase
+{
+  "Brown brown brown fox brown dog"
+}
+
+# Did you notice the "Brown" vs "brown" ?
+# change the filters order
+GET /library/_analyze?tokenizer=standard&filters=lowercase,unique
+{
+  "Brown brown brown fox brown dog"
+}
+
+#__________________________________________________
+# analyzer <==> tokenizer + 0 or more token filters
+
+# standard analyzer = 
+#                   standard tokenizer + 
+#                   Lower Case Token Filter + 
+#                   Stop Token Filter (default removes is, a, this etc.)
+# standard tokenizer = implements the Unicode Text Segmentation algorithm for European languages
+GET /library/_analyze?analyzer=standard
+{
+  "Vous êtes éveillés? Estás despierto?"
+}
+
+
+#__________________________________________________
+# Understanding analysis is very important, because
+# the emitted tokens can change a lot!
+
+GET /library/_analyze?tokenizer=standard&filters=lowercase
+{
+  "THE quick.brown_FOx Jumped! $19.95 @ 3.0"
+}
+
+GET /library/_analyze?tokenizer=letter&filters=lowercase
+{
+  "THE quick.brown_FOx Jumped! $19.95 @ 3.0"
+}
+
+
+# More info: https://www.elastic.co/guide/en/elasticsearch/guide/current/_controlling_analysis.html

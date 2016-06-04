@@ -1,0 +1,208 @@
+################################
+
+
+#__________________________________________________
+# Mappings
+#__________________________________________________
+
+
+
+#__________________________________________________
+# All documents have a "mapping" (aka a schema).
+# This is either defined up-front, or dynamically
+# guessed by Elasticsearch
+
+# Let's look at the mapping ES dynamically generated
+
+GET /library/_mapping 
+
+
+
+
+
+#__________________________________________________
+# We can add new fields...
+
+PUT /library/books/_mapping
+{
+  "books": {
+    "properties": {
+      "my_new_field": {
+        "type": "string"
+      }
+    }
+  }
+}
+
+GET /library/_mapping
+
+
+#__________________________________________________
+# We can also specify custom settings (analyzers, etc)
+
+PUT /library/books/_mapping
+{
+  "books": {
+    "properties": {
+      "english_field": {
+        "type": "string",
+        "analyzer": "english"
+      }
+    }
+  }
+}
+
+GET /library/_mapping
+
+#__________________________________________________
+# But we cannot change an existing field!
+# in this case you'll need to reindex
+PUT /library/books/_mapping
+{
+  "books": {
+    "properties": {
+      "english_field": {
+        "type": "double"
+      }
+    }
+  }
+}
+
+
+#__________________________________________________
+# Does updating a mapping update the documents too?
+
+GET library/books/_search
+
+GET library/books/_search
+{
+  "query": {
+    "match": {
+      "english_field": "fox"
+    }
+  }
+}
+
+# now it will be seen
+POST /library/books/1/_update
+{
+  "doc": {
+    "english_field": "english safa kasha"
+  }
+}
+
+GET library/books/_search
+
+#__________________________________________________
+# It often makes sense to map fields to avoid
+# problems, and leave the rest dynamic
+
+# ALM date format
+# "last-modified": "2015-03-18 09:17:03"
+GET alm@mercury@qc/defect/_search
+{
+  "fields": ["last-modified", "fields.closing-date"], 
+  "query": {
+    "match": {
+      "fields.id": "98062"
+    }
+  }
+}
+
+PUT library/books/10
+{
+  "title": "50 shades of grey",
+  "date": "2015-03-18 09:17:03"
+}
+
+# No match since field is mapped as string
+GET library/books/_search
+{
+  "query": {
+    "filtered": {
+      "filter": {
+        "range": {
+          "date": {
+            "gte": "2015-03-17"
+          }
+        }
+      }
+    }
+  }
+}
+
+GET library/books/_mapping
+
+# lets fix it
+# First we map field as formatted date
+# Ooops we cant chage mapping after documents where
+# indexed.
+PUT library/books/_mapping
+{
+  "library": {
+    "mappings": {
+      "books": {
+        "properties": {
+          "date": {
+            "type": "date",
+            "format": "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd"
+          }
+        },
+        "english_field": {
+          "type": "string",
+          "analyzer": "english"
+        },
+        "my_new_field": {
+          "type": "string"
+        },
+        "price": {
+          "type": "long"
+        },
+        "title": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
+
+# We need to delete and reindex
+DELETE library/books
+
+PUT library/books/_mapping
+{
+  "books": {
+    "properties": {
+      "date": {
+        "type": "date",
+        "format": "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd"
+      }
+    }
+  }
+}
+
+# Now lets try again
+PUT library/books/10
+{
+  "title": "50 shades of grey",
+  "date": "2015-03-18 09:17:03"
+}
+
+GET library/books/_mapping
+
+# No match since field is mapped as string
+GET library/books/_search
+{
+  "query": {
+    "filtered": {
+      "filter": {
+        "range": {
+          "date": {
+            "gte": "2015-03-17"
+          }
+        }
+      }
+    }
+  }
+}
+

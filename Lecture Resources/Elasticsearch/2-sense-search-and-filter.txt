@@ -1,0 +1,223 @@
+################################
+
+#__________________________________________________
+# Search and Filter
+#__________________________________________________
+
+#__________________________________________________
+# When you need to index a lot of docs,
+# you should use the bulk API
+
+DELETE /library/books
+
+#??? A-Z The quick brown fox ???
+POST /library/books/_bulk
+{ "index": { "_id": 1 }}
+{ "title": "The quick brown fox", "price": 5 }
+{ "index": { "_id": 2 }}
+{ "title": "The quick brown fox jumps over the lazy dog", "price": 15 }
+{ "index": { "_id": 3 }}
+{ "title": "The quick brown fox jumps over the quick dog", "price": 8 }
+{ "index": { "_id": 4 }}
+{ "title": "Brown fox brown dog", "price": 2 }
+{ "index": { "_id": 5 }}
+{ "title": "Lazy dog", "price": 9 }
+
+
+# More info: https://www.elastic.co/guide/en/elasticsearch/guide/current/bulk.html
+
+
+#__________________________________________________
+# Let's execute a basic search.
+# Find *all* documents
+
+GET /library/books/_search
+
+
+
+#__________________________________________________
+# Let's find all "fox" documents
+
+GET /library/books/_search
+{
+  "query": {
+    "match": {
+      "title": "fox"
+    }
+  }
+}
+
+
+# How about "quick" and "dog" ?
+GET /library/books/_search
+{
+  "query": {
+    "match": {
+      "title": "quick dog"
+    }
+  }
+}
+
+# Let's be more strict and only ask for phrases
+GET /library/books/_search
+{
+  "query": {
+    "match_phrase": {
+      "title": "quick dog"
+    }
+  }
+}
+
+# Results are ranked by "relevance" 
+# shorter fields get higher score ("explain": true,)
+GET /library/books/_search
+{
+  "query": {
+    "match": {
+      "title": "quick"
+    }
+  }
+}
+
+
+
+# More info: https://www.elastic.co/guide/en/elasticsearch/guide/current/relevance-intro.html
+
+
+
+#__________________________________________________
+# We can also do boolean combinations of querys
+# Let's find all docs with "quick" and "lazy dog"
+
+GET /library/books/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "title": "quick"
+          }
+        },
+        {
+          "match_phrase": {
+            "title": "lazy dog"
+          }
+        }
+      ]
+    }
+  }
+}
+
+
+#__________________________________________________
+# Combinations can be boosted for different effects
+
+GET /library/books/_search
+{
+  "query": {
+    "bool": {
+      "should": [
+        {
+          "match_phrase": {
+            "title": {
+              "query": "quick dog",
+              "boost": 5
+            }
+          }
+        },
+        {
+          "match_phrase": {
+            "title": {
+              "query": "lazy dog"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+
+# highlighting the matching fragments:
+
+GET /library/books/_search
+{
+  "query": {
+    "bool": {
+      "should": [
+        {
+          "match_phrase": {
+            "title": {
+              "query": "quick dog",
+              "boost": 0.5
+            }
+          }
+        },
+        {
+          "match_phrase": {
+            "title": {
+              "query": "lazy dog"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "highlight": {
+    "fields": {
+      "title": {}
+    },
+    "pre_tags": ["<span class=\"mark\">"],
+    "post_tags": ["</span>"]
+  }
+}
+
+#__________________________________________________
+# Filtering 
+# Filtering is often faster than querying
+
+
+# find all books costing >$5
+
+GET /library/books/_search
+{
+  "query": {
+    "filtered": {
+      "filter": {
+        "range": {
+          "price": {
+            "gte": 14
+          }
+        }
+      }
+    }
+  }
+}
+
+
+# Filters and queries can be combined.
+# Find all books about "lazy dogs" costing >$5
+
+GET /library/books/_search
+{
+  "query": {
+    "filtered": {
+      "query": {
+        "match": {
+          "title": "lazy dog"
+        }
+      },
+      "filter": {
+        "range": {
+          "price": {
+            "gte": 5,
+            "lte": 10
+          }
+        }
+      }
+    }
+  }
+}
+
+
+# More info: https://www.elastic.co/guide/en/elasticsearch/guide/current/structured-search.html

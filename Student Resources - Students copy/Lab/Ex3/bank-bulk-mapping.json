@@ -1,0 +1,18 @@
+PUT /bank/_mapping/account
+{
+  "properties": {
+    "address": {
+      "type": "multi_field",
+      "fields": {
+        "address": {
+          "type": "string",
+          "index": "analyzed"
+        },
+        "address.raw": {
+          "type": "string",
+          "index": "not_analyzed"
+        }
+      }
+    }
+  }
+}

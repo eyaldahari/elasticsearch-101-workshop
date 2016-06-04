@@ -1,0 +1,33 @@
+curl _XPUT localhost:9200/_template/crime_template -d '
+{ 
+    "template" : "crime-*", 
+    "mappings" : { 
+        "_default_" : { 
+            "_all" : { "enabled" : false }, 
+            "dynamic_templates" : [{ 
+              "message_field" : { 
+                "match" : "message", 
+                "match_mapping_type" : "string", 
+                "mapping" : { "type" : "string", "index" : "not_analyzed" } 
+              } 
+            }, { 
+              "string_fields" : { 
+                "match" : "*", 
+                "match_mapping_type" : "string", 
+                "mapping" : { "type" : "string", "index" : "not_analyzed" } 
+              } 
+            }], 
+            "properties" : { 
+                "@timestamp" : { "type" : "date", "format" : "dateOptionalTime" }, 
+                "@version" : { "type" : "integer", "index" : "not_analyzed" }, 
+                "Category" : { "type" : "string", "index" : "not_analyzed" }, 
+                "Descript" : { "type" : "string", "index" : "not_analyzed" },                 
+                "Date": { "type": "date", "format": "MM/dd/yyyy HH:mm:ss a" },
+                "PdDistrict" : { "type" : "string", "index" : "not_analyzed" },
+                "Resolution" : { "type" : "string", "index" : "not_analyzed" },                
+                "Address" : { "type" : "string", "index" : "not_analyzed" },                
+                "geoip" : { "type" : "object", "dynamic" : true, "properties" : { "location" : { "type" : "geo_point" } } }
+            } 
+        } 
+    } 
+}'
